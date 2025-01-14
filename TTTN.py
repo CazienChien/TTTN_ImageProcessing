@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk, ImageFilter
 from tkinter import messagebox  # Thêm để hiển thị thông báo
+import numpy as np
+import cv2
 
 
 def import_image():
@@ -25,8 +27,6 @@ def import_image():
             edited_image_label.image = None
         except Exception as e:
             print(f"Error: {e}")
-
-
 
 
 def save_image():
@@ -102,11 +102,53 @@ def apply_filter(filter_type):
         edited_image_label.config(image=edited_img_tk, text="")
         edited_image_label.image = edited_img_tk
 
+
+# Threshold Segmentation
+def apply_threshold():
+    global img, edited_img
+    if img:
+        grayscale = img.convert("L")  # Chuyển ảnh về dạng đen trắng (grayscale)
+        threshold_value = 128  # Ngưỡng mặc định, có thể thay đổi
+        thresholded = grayscale.point(lambda p: p > threshold_value and 255)
+
+        edited_img = thresholded
+        edited_img_tk = ImageTk.PhotoImage(edited_img)
+        edited_image_label.config(image=edited_img_tk, text="")
+        edited_image_label.image = edited_img_tk
+
+
+# K-Means Clustering
+def apply_kmeans():
+    global img, edited_img
+    if img:
+        # Chuyển ảnh về dạng numpy array
+        img_np = np.array(img)
+
+        # Chuyển ảnh sang định dạng 2D (pixel, 3 màu)
+        Z = img_np.reshape((-1, 3))
+        Z = np.float32(Z)
+
+        # Thực hiện K-means
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
+        k = 4  # Số lượng cụm (clusters)
+        _, labels, centers = cv2.kmeans(Z, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+
+        # Chuyển đổi lại cụm trung tâm về giá trị pixel
+        centers = np.uint8(centers)
+        segmented_image = centers[labels.flatten()]
+        segmented_image = segmented_image.reshape(img_np.shape)
+
+        edited_img = Image.fromarray(segmented_image)
+        edited_img_tk = ImageTk.PhotoImage(edited_img)
+        edited_image_label.config(image=edited_img_tk, text="")
+        edited_image_label.image = edited_img_tk
+
+
 def exit_app():
     root.quit()
 
 
-#-------------------------------TẠO GIAO DIỆN---------------------------------#
+# -------------------------------TẠO GIAO DIỆN---------------------------------#
 # Tạo giao diện chính
 root = tk.Tk()
 root.title("TTTN-ImageProcessingApp")
@@ -117,7 +159,7 @@ menu_bar = tk.Menu(root)
 
 options_menu = tk.Menu(menu_bar, tearoff=0)
 options_menu.add_command(label="Chọn Ảnh", command=import_image)  # Thêm tùy chọn "Import Ảnh"
-options_menu.add_separator() # Dòng ngăn cách
+options_menu.add_separator()  # Dòng ngăn cách
 
 # Tạo menu con cho bộ lọc
 filter_menu = tk.Menu(options_menu, tearoff=0)
@@ -127,15 +169,15 @@ filter_menu.add_command(label="Chi tiết", command=lambda: apply_filter("DETAIL
 filter_menu.add_command(label="Làm nét", command=lambda: apply_filter("SHARPEN"))
 filter_menu.add_command(label="Làm mượt", command=lambda: apply_filter("SMOOTH"))
 
-
+# Thêm hai chức năng vào menu
+filter_menu.add_command(label="Threshold Segmentation", command=apply_threshold)
+filter_menu.add_command(label="K-Means Clustering", command=apply_kmeans)
 
 options_menu.add_cascade(label="Chọn Bộ Lọc", menu=filter_menu)  # Thêm menu con vào Options
 options_menu.add_separator()
 options_menu.add_command(label="Lưu Ảnh", command=save_image)  # Thêm vào menu "Options"
 options_menu.add_separator()
 options_menu.add_command(label="Thoát", command=exit_app)  # Thêm tùy chọn "Thoát"
-
-
 
 menu_bar.add_cascade(label="Options", menu=options_menu)  # Thêm menu "Options" vào menu bar
 
