@@ -107,10 +107,19 @@ def apply_filter(filter_type):
 def apply_threshold():
     global img, edited_img
     if img:
-        grayscale = img.convert("L")  # Chuyển ảnh về dạng đen trắng (grayscale)
-        threshold_value = 128  # Ngưỡng mặc định, có thể thay đổi
-        thresholded = grayscale.point(lambda p: p > threshold_value and 255)
+        # Chuyển ảnh về dạng grayscale
+        grayscale = img.convert("L")
 
+        # Chuyển đổi ảnh grayscale sang numpy array
+        img_np = np.array(grayscale)
+
+        # Tính ngưỡng tự động bằng phương pháp Otsu
+        _, thresholded_np = cv2.threshold(img_np, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+        # Chuyển ảnh đã ngưỡng hóa trở lại dạng PIL Image
+        thresholded = Image.fromarray(thresholded_np)
+
+        # Cập nhật ảnh đã chỉnh sửa
         edited_img = thresholded
         edited_img_tk = ImageTk.PhotoImage(edited_img)
         edited_image_label.config(image=edited_img_tk, text="")
@@ -125,24 +134,28 @@ def apply_kmeans():
         img_np = np.array(img)
 
         # Chuyển ảnh sang định dạng 2D (pixel, 3 màu)
-        Z = img_np.reshape((-1, 3))
-        Z = np.float32(Z)
+        pixel_values = img_np.reshape((-1, 3))
+        pixel_values = np.float32(pixel_values)
 
-        # Thực hiện K-means
+        # Cài đặt tham số K-Means
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
-        k = 4  # Số lượng cụm (clusters)
-        _, labels, centers = cv2.kmeans(Z, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+        k = 4  # Bạn có thể sửa thành số cụm mong muốn
 
-        # Chuyển đổi lại cụm trung tâm về giá trị pixel
+        # Thực hiện thuật toán K-Means
+        _, labels, centers = cv2.kmeans(pixel_values, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+
+        # Chuyển đổi lại các điểm trung tâm thành giá trị pixel
         centers = np.uint8(centers)
         segmented_image = centers[labels.flatten()]
         segmented_image = segmented_image.reshape(img_np.shape)
 
+        # Chuyển ảnh kết quả thành dạng PIL để hiển thị
         edited_img = Image.fromarray(segmented_image)
         edited_img_tk = ImageTk.PhotoImage(edited_img)
+
+        # Hiển thị ảnh đã chỉnh sửa
         edited_image_label.config(image=edited_img_tk, text="")
         edited_image_label.image = edited_img_tk
-
 
 def exit_app():
     root.quit()
