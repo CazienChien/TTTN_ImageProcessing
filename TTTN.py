@@ -131,7 +131,7 @@ def apply_kmeans():
     global img, edited_img
     if img:
         # Chọn giá trị K từ người dùng
-        k = simpledialog.askinteger("Nhập số K", "Nhập giá trị K (1-10):", minvalue=1, maxvalue=10)
+        k = simpledialog.askinteger("Nhập số K", "Nhập giá trị K (2-200):", minvalue=2, maxvalue=200)
 
         if k is None:
             return
