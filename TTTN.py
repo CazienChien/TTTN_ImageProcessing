@@ -4,7 +4,7 @@ from PIL import Image, ImageTk, ImageFilter
 from tkinter import messagebox  # Thêm để hiển thị thông báo
 import numpy as np
 import cv2
-
+from tkinter import simpledialog
 
 def import_image():
     # Chọn file ảnh
@@ -130,8 +130,24 @@ def apply_threshold():
 def apply_kmeans():
     global img, edited_img
     if img:
+        # Chọn giá trị K từ người dùng
+        k = simpledialog.askinteger("Nhập số K", "Nhập giá trị K (1-10):", minvalue=1, maxvalue=10)
+
+        if k is None:
+            return
+
         # Chuyển ảnh về dạng numpy array
         img_np = np.array(img)
+
+        # Kiểm tra xem ảnh có phải là ảnh RGB không
+        if len(img_np.shape) == 2:  # Nếu ảnh chỉ có một kênh (grayscale)
+            # Chuyển ảnh grayscale sang RGB
+            img_np = cv2.cvtColor(img_np, cv2.COLOR_GRAY2RGB)
+
+        # Kiểm tra kích thước mảng (phải chia hết cho 3 để reshape thành (pixel, 3))
+        if img_np.shape[2] != 3:
+            print("Ảnh không phải là ảnh màu RGB.")
+            return
 
         # Chuyển ảnh sang định dạng 2D (pixel, 3 màu)
         pixel_values = img_np.reshape((-1, 3))
@@ -139,7 +155,6 @@ def apply_kmeans():
 
         # Cài đặt tham số K-Means
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
-        k = 4  # Bạn có thể sửa thành số cụm mong muốn
 
         # Thực hiện thuật toán K-Means
         _, labels, centers = cv2.kmeans(pixel_values, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
