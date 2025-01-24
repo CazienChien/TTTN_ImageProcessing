@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk, ImageFilter
 from tkinter import messagebox  # Thêm để hiển thị thông báo
-
+import numpy as np
 
 def import_image():
     # Chọn file ảnh
@@ -25,8 +25,6 @@ def import_image():
             edited_image_label.image = None
         except Exception as e:
             print(f"Error: {e}")
-
-
 
 
 def save_image():
@@ -86,21 +84,33 @@ def apply_filter(filter_type):
     # Áp dụng bộ lọc vào ảnh gốc
     global img, edited_img
     if img:
-        if filter_type == "BLUR":
-            edited_img = img.filter(ImageFilter.BLUR)
-        elif filter_type == "CONTOUR":
-            edited_img = img.filter(ImageFilter.CONTOUR)
-        elif filter_type == "DETAIL":
-            edited_img = img.filter(ImageFilter.DETAIL)
-        elif filter_type == "SHARPEN":
-            edited_img = img.filter(ImageFilter.SHARPEN)
-        elif filter_type == "SMOOTH":
-            edited_img = img.filter(ImageFilter.SMOOTH)
+        if filter_type == "SHARPEN":
+            # Tạo ma trận bộ lọc làm nét tùy chỉnh
+            sharpening_kernel = np.array([
+                [0, -1, 0],
+                [-1, 5, -1],
+                [0, -1, 0]
+            ])
+
+            # Áp dụng bộ lọc làm nét tùy chỉnh lên ảnh
+            edited_img = img.filter(ImageFilter.Kernel((3, 3), sharpening_kernel.flatten(), scale=1))
+
+        else:
+            # Sử dụng các bộ lọc có sẵn của PIL
+            if filter_type == "BLUR":
+                edited_img = img.filter(ImageFilter.BLUR)
+            elif filter_type == "CONTOUR":
+                edited_img = img.filter(ImageFilter.CONTOUR)
+            elif filter_type == "DETAIL":
+                edited_img = img.filter(ImageFilter.DETAIL)
+            elif filter_type == "SMOOTH":
+                edited_img = img.filter(ImageFilter.SMOOTH)
 
         # Hiển thị ảnh đã chỉnh sửa
         edited_img_tk = ImageTk.PhotoImage(edited_img)
         edited_image_label.config(image=edited_img_tk, text="")
         edited_image_label.image = edited_img_tk
+
 
 def exit_app():
     root.quit()
@@ -117,7 +127,7 @@ menu_bar = tk.Menu(root)
 
 options_menu = tk.Menu(menu_bar, tearoff=0)
 options_menu.add_command(label="Chọn Ảnh", command=import_image)  # Thêm tùy chọn "Import Ảnh"
-options_menu.add_separator() # Dòng ngăn cách
+options_menu.add_separator()  # Dòng ngăn cách
 
 # Tạo menu con cho bộ lọc
 filter_menu = tk.Menu(options_menu, tearoff=0)
@@ -127,15 +137,11 @@ filter_menu.add_command(label="Chi tiết", command=lambda: apply_filter("DETAIL
 filter_menu.add_command(label="Làm nét", command=lambda: apply_filter("SHARPEN"))
 filter_menu.add_command(label="Làm mượt", command=lambda: apply_filter("SMOOTH"))
 
-
-
 options_menu.add_cascade(label="Chọn Bộ Lọc", menu=filter_menu)  # Thêm menu con vào Options
 options_menu.add_separator()
 options_menu.add_command(label="Lưu Ảnh", command=save_image)  # Thêm vào menu "Options"
 options_menu.add_separator()
 options_menu.add_command(label="Thoát", command=exit_app)  # Thêm tùy chọn "Thoát"
-
-
 
 menu_bar.add_cascade(label="Options", menu=options_menu)  # Thêm menu "Options" vào menu bar
 
